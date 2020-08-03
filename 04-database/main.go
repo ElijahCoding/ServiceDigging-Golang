@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"time"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"service-template/04-database/schema"
 )
 
 func main() {
@@ -23,6 +25,22 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	flag.Parse()
+	switch flag.Arg(0) {
+	case "migrate":
+		if err := schema.Migrate(db); err != nil {
+			log.Fatal("applying migrations", err)
+		}
+		log.Println("Migrations complete")
+		return
+	case "seed":
+		if err := schema.Seed(db); err != nil {
+			log.Fatal("applying seed data", err)
+		}
+		log.Println("Seeds complete")
+		return
+	}
 
 	api := http.Server{
 		Addr:         "localhost:8080",
