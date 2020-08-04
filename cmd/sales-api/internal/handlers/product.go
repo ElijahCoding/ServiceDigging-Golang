@@ -5,7 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"net/http"
-	"service-template/05-packaging/internal/product"
+	"service-template/internal/product"
 )
 
 type Products struct {

@@ -2,22 +2,42 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"service-template/cmd/sales-api/internal/handlers"
+	"service-template/internal/platform/database"
 	"syscall"
 	"time"
+
 )
 
 func main() {
-	log.Printf("main: Started")
-	defer log.Println("main: Completed")
+
+	// =========================================================================
+	// App Starting
+
+	log.Printf("main : Started")
+	defer log.Println("main : Completed")
+
+	// =========================================================================
+	// Start Database
+
+	db, err := database.Open()
+	if err != nil {
+		log.Fatalf("error: connecting to db: %s", err)
+	}
+	defer db.Close()
+
+	productsHandler := handlers.Products{DB: db}
+
+	// =========================================================================
+	// Start API Service
 
 	api := http.Server{
-		Addr:         "localhost:8080",
-		Handler:      http.HandlerFunc(ListProducts),
+		Addr:         "localhost:8000",
+		Handler:      http.HandlerFunc(productsHandler.List),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
@@ -43,7 +63,8 @@ func main() {
 	// Blocking main and waiting for shutdown.
 	select {
 	case err := <-serverErrors:
-		log.Fatalf("error: listening and serving: %s", err)
+		log.Fatalf("error: starting server: %s", err)
+
 	case <-shutdown:
 		log.Println("main : Start shutdown")
 
@@ -62,34 +83,5 @@ func main() {
 		if err != nil {
 			log.Fatalf("main : could not stop server gracefully : %v", err)
 		}
-	}
-}
-
-// Product is an item we sell.
-type Product struct {
-	Name     string `json:"name"`
-	Cost     int    `json:"cost"`
-	Quantity int    `json:"quantity"`
-}
-
-// ListProducts is an HTTP Handler for returning a list of Products.
-func ListProducts(w http.ResponseWriter, r *http.Request) {
-	list := []Product{
-		{Name: "Comic Books", Cost: 50, Quantity: 42},
-		{Name: "McDonalds Toys", Cost: 75, Quantity: 120},
-	}
-
-	data, err := json.Marshal(list)
-	if err != nil {
-		log.Println("error marshalling result", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	if _, err := w.Write(data); err != nil {
-		log.Println("error writing result", err)
 	}
 }

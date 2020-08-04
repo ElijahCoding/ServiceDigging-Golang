@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"log"
-	"service-template/05-packaging/internal/platform/database"
-	"service-template/05-packaging/internal/shcema"
+	"service-template/internal/platform/database"
+	"service-template/internal/shcema"
 )
 
 func main() {
